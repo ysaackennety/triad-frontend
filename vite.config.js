@@ -2,6 +2,6 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  base: '/triad-frontend/',
+  base: process.env.VERCEL ? '/' : '/triad-frontend/',
   plugins: [react()],
 })
