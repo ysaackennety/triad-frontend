@@ -1,0 +1,314 @@
+:root {
+  --login-bg: #050915;
+  --login-panel: rgba(15, 22, 36, 0.86);
+  --login-border: rgba(0, 230, 118, 0.18);
+  --login-green: #00e676;
+  --login-soft: #9aa7bb;
+}
+
+.loginScreenPremium {
+  width: 100%;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(0, 230, 118, 0.22), transparent 28%),
+    radial-gradient(circle at 85% 78%, rgba(0, 168, 89, 0.18), transparent 30%),
+    linear-gradient(135deg, #050915, #07101d 58%, #04070d);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.loginBackgroundGrid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at center, black 20%, transparent 78%);
+  pointer-events: none;
+}
+
+.loginGlow {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  filter: blur(50px);
+  opacity: 0.36;
+  pointer-events: none;
+}
+
+.loginGlowA {
+  left: -120px;
+  top: -80px;
+  background: #00e676;
+}
+
+.loginGlowB {
+  right: -130px;
+  bottom: -120px;
+  background: #00a859;
+}
+
+.loginShellPremium {
+  width: min(1120px, 100%);
+  min-height: 640px;
+  display: grid;
+  grid-template-columns: 1.12fr 0.88fr;
+  position: relative;
+  z-index: 2;
+  border: 1px solid rgba(0, 230, 118, 0.18);
+  border-radius: 34px;
+  background: rgba(9, 14, 25, 0.68);
+  box-shadow: 0 35px 90px rgba(0, 0, 0, 0.58);
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+}
+
+.loginBrandPanel {
+  padding: 48px;
+  background:
+    radial-gradient(circle at 28% 20%, rgba(0, 230, 118, 0.18), transparent 34%),
+    linear-gradient(140deg, rgba(17, 25, 42, 0.92), rgba(7, 11, 20, 0.98));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 38px;
+}
+
+.loginLogoBox {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.loginLogoMark {
+  width: 62px;
+  height: 62px;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #00e676, #00a859);
+  color: #03140b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 18px 38px rgba(0, 230, 118, 0.24);
+  overflow: hidden;
+}
+
+.loginLogoMark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.loginLogoBox h1 {
+  font-size: 34px;
+  color: #00e676;
+  line-height: 1;
+  letter-spacing: 1.4px;
+}
+
+.loginLogoBox span,
+.loginCopy p,
+.loginStatsGrid span,
+.loginFormHeader p,
+.loginDefaultAccess span {
+  color: var(--login-soft);
+}
+
+.loginCopy {
+  max-width: 580px;
+}
+
+.loginBadge {
+  width: fit-content;
+  height: 35px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(0, 230, 118, 0.12);
+  border: 1px solid rgba(0, 230, 118, 0.2);
+  color: #00e676;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+}
+
+.loginCopy h2 {
+  font-size: clamp(34px, 4vw, 56px);
+  line-height: 0.98;
+  letter-spacing: -2px;
+  max-width: 560px;
+  margin-bottom: 18px;
+}
+
+.loginCopy p {
+  font-size: 16px;
+  line-height: 1.7;
+  max-width: 560px;
+}
+
+.loginStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.loginStatsGrid div {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.loginStatsGrid strong {
+  display: block;
+  font-size: 25px;
+  color: #ffffff;
+  margin-bottom: 5px;
+}
+
+.loginFormPanel {
+  padding: 48px;
+  background: rgba(8, 12, 22, 0.88);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.loginFormHeader {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.loginFormIcon {
+  width: 58px;
+  height: 58px;
+  border-radius: 19px;
+  background: rgba(0, 230, 118, 0.14);
+  color: #00e676;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loginFormHeader h3 {
+  font-size: 27px;
+  margin-bottom: 4px;
+}
+
+.loginField {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-bottom: 18px;
+}
+
+.loginField > span {
+  color: #c8d0dc;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.loginField > div {
+  height: 54px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 16px;
+  background: rgba(5, 9, 17, 0.76);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  color: #00e676;
+  transition: 0.22s;
+}
+
+.loginField > div:focus-within {
+  border-color: #00e676;
+  box-shadow: 0 0 0 4px rgba(0, 230, 118, 0.1);
+}
+
+.loginField input {
+  flex: 1;
+  height: 100%;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: #fff;
+  font-size: 15px;
+}
+
+.loginErrorBox {
+  border: 1px solid rgba(255, 77, 125, 0.26);
+  background: rgba(255, 77, 125, 0.12);
+  color: #ff7b9f;
+  border-radius: 15px;
+  padding: 13px 15px;
+  font-weight: 800;
+  margin: 4px 0 18px;
+}
+
+.loginSubmitButton {
+  width: 100%;
+  height: 54px;
+  justify-content: center;
+  border-radius: 16px;
+  font-size: 15px;
+  box-shadow: 0 18px 38px rgba(0, 230, 118, 0.22);
+}
+
+.loginSubmitButton:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.loginDefaultAccess {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(0, 230, 118, 0.08);
+  border: 1px solid rgba(0, 230, 118, 0.16);
+}
+
+.loginDefaultAccess strong {
+  display: block;
+  color: #00e676;
+  margin-bottom: 5px;
+}
+
+@media (max-width: 980px) {
+  .loginShellPremium {
+    grid-template-columns: 1fr;
+  }
+
+  .loginFormPanel {
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+@media (max-width: 620px) {
+  .loginScreenPremium {
+    padding: 18px;
+  }
+
+  .loginBrandPanel,
+  .loginFormPanel {
+    padding: 28px;
+  }
+
+  .loginStatsGrid {
+    grid-template-columns: 1fr;
+  }
+}

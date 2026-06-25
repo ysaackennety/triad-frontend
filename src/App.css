@@ -4327,3 +4327,291 @@ textarea:focus {
     justify-content: center;
   }
 }
+
+/* ===================== */
+/* VENDAS DE BALCÃO */
+/* ===================== */
+
+.vendasBalcaoPage {
+  width: 100%;
+}
+
+.vendasResumoCards {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.vendasBalcaoGrid {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.vendasCard {
+  background:
+    radial-gradient(circle at top right, rgba(0, 230, 118, 0.08), transparent 35%),
+    var(--cor-painel, #101522);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.vendaRapidaCard {
+  border-color: rgba(0, 230, 118, 0.26);
+}
+
+.vendasPanelHeader {
+  height: auto;
+  min-height: 52px;
+  padding: 0 0 18px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.vendaResumoBox {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.vendaResumoBox > div {
+  background: rgba(7, 11, 20, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.vendaResumoBox span {
+  display: block;
+  color: var(--cor-texto-suave, #929bad);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+}
+
+.vendaResumoBox strong {
+  display: block;
+  color: var(--cor-texto, #ffffff);
+  font-size: 23px;
+}
+
+.vendaResumoBox .trocoPositivo {
+  border-color: rgba(0, 230, 118, 0.45);
+  background: rgba(0, 214, 107, 0.09);
+}
+
+.vendaResumoBox .trocoPositivo strong,
+.vendaResumoBox .trocoPositivo span {
+  color: var(--cor-principal, #00e676);
+}
+
+.vendaResumoBox .valorInsuficiente {
+  border-color: rgba(255, 77, 125, 0.5);
+  background: rgba(255, 77, 125, 0.1);
+}
+
+.vendaResumoBox .valorInsuficiente strong,
+.vendaResumoBox .valorInsuficiente span {
+  color: #ff4d7d;
+}
+
+.produtosBalcaoLista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.produtoBalcaoItem {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  background: rgba(7, 11, 20, 0.74);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  padding: 14px;
+  transition: 0.2s ease;
+}
+
+.produtoBalcaoItem:hover {
+  border-color: rgba(0, 230, 118, 0.34);
+  transform: translateY(-1px);
+}
+
+.produtoVendaIcone {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(0, 214, 107, 0.13);
+  color: var(--cor-principal, #00e676);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.produtoVendaIcone.vendaIcone {
+  background: rgba(0, 214, 107, 0.18);
+}
+
+.relatorioProdutoIcone {
+  width: 50px;
+  height: 50px;
+}
+
+.produtoBalcaoInfo {
+  min-width: 0;
+}
+
+.produtoBalcaoInfo strong {
+  display: block;
+  color: var(--cor-texto, #ffffff);
+  font-size: 15px;
+  margin-bottom: 5px;
+}
+
+.produtoBalcaoInfo span {
+  display: block;
+  color: var(--cor-texto-suave, #929bad);
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.produtoBalcaoInfo .estoqueBaixo,
+.estoqueBaixo {
+  color: #ffc857 !important;
+  font-weight: 900;
+}
+
+.produtoBalcaoActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.produtoBalcaoActions .secondaryButton {
+  height: 36px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.vendaHistoricoItem {
+  grid-template-columns: 52px 1fr auto;
+}
+
+.vendasRelatorioPanel {
+  margin-top: 26px;
+}
+
+@media (max-width: 1200px) {
+  .vendasBalcaoGrid,
+  .listasBalcaoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .vendasResumoCards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .vendasResumoCards {
+    grid-template-columns: 1fr;
+  }
+
+  .vendaResumoBox {
+    grid-template-columns: 1fr;
+  }
+
+  .produtoBalcaoItem,
+  .vendaHistoricoItem {
+    grid-template-columns: 1fr;
+  }
+
+  .produtoVendaIcone {
+    width: 100%;
+    height: 58px;
+  }
+
+  .produtoBalcaoActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .produtoBalcaoActions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.page-vendasBalcao {
+  animation-name: entrarFinanceiro;
+}
+
+
+/* ===================== */
+/* SESSÃO / LOGIN SEPARADO */
+/* ===================== */
+
+.sessaoUsuarioBox {
+  width: 100%;
+  min-height: 72px;
+  border: 1px solid rgba(0, 230, 118, 0.18);
+  background: rgba(0, 230, 118, 0.07);
+  border-radius: 18px;
+  display: grid;
+  grid-template-columns: 44px 1fr 42px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 18px;
+}
+
+.sessaoUsuarioAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 15px;
+  background: rgba(0, 230, 118, 0.16);
+  color: var(--cor-principal, #00e676);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.sessaoUsuarioAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sessaoUsuarioDados strong {
+  display: block;
+  color: var(--cor-texto, #ffffff);
+  font-size: 13px;
+  line-height: 1.15;
+  margin-bottom: 4px;
+}
+
+.sessaoUsuarioDados span {
+  color: var(--cor-texto-suave, #929bad);
+  font-size: 12px;
+}
+
+.sessaoSairButton {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 14px;
+  justify-content: center;
+}
+
+.divider.mini {
+  margin: 14px 0 20px;
+}
