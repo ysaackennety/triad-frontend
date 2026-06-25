@@ -130,7 +130,8 @@ export default function ModalPagamento({
               onChange={alterarCampoPagamento}
             >
               <option value="PIX">PIX</option>
-              <option value="CARTAO">Cartão de crédito</option>
+              <option value="CREDITO">Cartão de crédito</option>
+              <option value="DEBITO">Cartão de débito</option>
               <option value="DINHEIRO">Dinheiro</option>
             </select>
           </div>

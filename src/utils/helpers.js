@@ -1,4 +1,4 @@
-import { configuracoesPadrao, funcionariosPadrao, produtosBalcaoPadrao } from "../data/defaults";
+import { configuracoesPadrao, funcionariosPadrao, produtosBalcaoPadrao, membrosMock } from "../data/defaults";
 
 export function carregarConfiguracoesSalvas() {
   try {
@@ -62,6 +62,27 @@ export function prepararFuncionarioLogin(funcionario, index = 0) {
     senha: funcionario.senha || (ehAdminPadrao && index === 0 ? "123456" : ""),
     permissao: funcionario.permissao || pegarPermissaoPorTipo(funcionario.tipoFuncionario),
   };
+}
+
+
+export function carregarMembrosSalvos() {
+  try {
+    const dadosSalvos = localStorage.getItem("triad_membros");
+
+    if (!dadosSalvos) {
+      return membrosMock;
+    }
+
+    const membros = JSON.parse(dadosSalvos);
+
+    if (!Array.isArray(membros)) {
+      return membrosMock;
+    }
+
+    return membros;
+  } catch {
+    return membrosMock;
+  }
 }
 
 export function carregarFuncionariosSalvos() {
@@ -214,8 +235,10 @@ export function formatarValorParaCampo(valor) {
 
 export function formatarFormaPagamento(forma) {
   if (forma === "PIX") return "PIX";
-  if (forma === "CARTAO") return "Cartão de crédito";
   if (forma === "DINHEIRO") return "Dinheiro";
+  if (forma === "CREDITO") return "Cartão de crédito";
+  if (forma === "DEBITO") return "Cartão de débito";
+  if (forma === "CARTAO") return "Cartão de crédito"; // compatibilidade com cadastros antigos
   return "Não informado";
 }
 

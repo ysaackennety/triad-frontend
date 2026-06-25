@@ -197,12 +197,13 @@ export default function TelaRelatorios({ membros, acessosHoje, configuracoes = c
   const totalPorForma = pagamentosFiltrados.reduce(
     (totais, pagamento) => {
       if (pagamento.forma === "PIX") totais.pix += pagamento.valorMensalidade;
-      if (pagamento.forma === "CARTAO") totais.cartao += pagamento.valorMensalidade;
+      if (pagamento.forma === "CREDITO" || pagamento.forma === "CARTAO") totais.credito += pagamento.valorMensalidade;
+      if (pagamento.forma === "DEBITO") totais.debito += pagamento.valorMensalidade;
       if (pagamento.forma === "DINHEIRO") totais.dinheiro += pagamento.valorMensalidade;
 
       return totais;
     },
-    { pix: 0, cartao: 0, dinheiro: 0 }
+    { pix: 0, credito: 0, debito: 0, dinheiro: 0 }
   );
 
   const pagamentosAgrupadosPorDia = pagamentosFiltrados.reduce((grupos, pagamento) => {
@@ -400,9 +401,15 @@ export default function TelaRelatorios({ membros, acessosHoje, configuracoes = c
         </div>
 
         <div className="financeiroMetodoCard">
-          <strong>{formatarDinheiro(totalPorForma.cartao)}</strong>
-          <span>Cartão</span>
-          <p>Recebido por cartão no filtro atual</p>
+          <strong>{formatarDinheiro(totalPorForma.credito)}</strong>
+          <span>Cartão de crédito</span>
+          <p>Recebido no crédito no filtro atual</p>
+        </div>
+
+        <div className="financeiroMetodoCard">
+          <strong>{formatarDinheiro(totalPorForma.debito)}</strong>
+          <span>Cartão de débito</span>
+          <p>Recebido no débito no filtro atual</p>
         </div>
 
         <div className="financeiroMetodoCard">

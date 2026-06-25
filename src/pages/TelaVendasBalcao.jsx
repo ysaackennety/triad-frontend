@@ -290,7 +290,8 @@ export default function TelaVendasBalcao({
               >
                 <option value="DINHEIRO">Dinheiro</option>
                 <option value="PIX">PIX</option>
-                <option value="CARTAO">Cartão de crédito</option>
+                <option value="CREDITO">Cartão de crédito</option>
+                <option value="DEBITO">Cartão de débito</option>
               </select>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+
   Fingerprint,
   UsersRound,
   CheckCircle2,
@@ -189,6 +190,21 @@ export default function CadastroMembro({
     };
   }, []);
 
+  const receberPagamentoAgora = formulario.receberPagamentoCadastro !== "nao";
+  const controlarTrocoCadastro = configuracoes.controlarTrocoDevolucao !== "nao";
+  const valorMensalidadeCadastro = converterValor(
+    formulario.valorPlano || configuracoes.valorMensalidadePadrao || "0"
+  );
+  const valorRecebidoCadastro = receberPagamentoAgora
+    ? converterValor(formulario.valorRecebidoCadastro || formulario.valorPlano || configuracoes.valorMensalidadePadrao || "0")
+    : 0;
+  const valorDevolucaoCadastro = receberPagamentoAgora && controlarTrocoCadastro
+    ? Math.max(valorRecebidoCadastro - valorMensalidadeCadastro, 0)
+    : 0;
+  const valorFaltanteCadastro = receberPagamentoAgora && controlarTrocoCadastro
+    ? Math.max(valorMensalidadeCadastro - valorRecebidoCadastro, 0)
+    : 0;
+
   return (
     <div className="cadastroPage">
       <header className="cadastroHeader">
@@ -307,6 +323,95 @@ export default function CadastroMembro({
             />
           </div>
         </div>
+
+        <div className="sectionTitle">
+          <BarChart3 size={20} />
+          <span>Pagamento inicial</span>
+        </div>
+
+        <div className="cadastroGrid">
+          <div className="formGroup">
+            <label>Receber pagamento agora?</label>
+            <select
+              name="receberPagamentoCadastro"
+              value={formulario.receberPagamentoCadastro || "sim"}
+              onChange={alterarCampo}
+            >
+              <option value="sim">Sim, receber agora</option>
+              <option value="nao">Não, deixar pendente</option>
+            </select>
+            <small className="formHelp">
+              Se receber agora, o pagamento já entra no Financeiro e nos Relatórios.
+            </small>
+          </div>
+
+          <div className="formGroup">
+            <label>Forma de pagamento</label>
+            <select
+              name="formaPagamentoCadastro"
+              value={formulario.formaPagamentoCadastro || configuracoes.formaPagamentoPadrao || "PIX"}
+              onChange={alterarCampo}
+              disabled={!receberPagamentoAgora}
+            >
+              <option value="PIX">PIX</option>
+              <option value="DINHEIRO">Dinheiro</option>
+              <option value="CREDITO">Cartão de crédito</option>
+              <option value="DEBITO">Cartão de débito</option>
+            </select>
+          </div>
+
+          <div className="formGroup">
+            <label>Valor recebido do aluno</label>
+            <input
+              type="text"
+              name="valorRecebidoCadastro"
+              placeholder="Ex: 100,00"
+              inputMode="decimal"
+              value={formulario.valorRecebidoCadastro || ""}
+              onChange={alterarCampo}
+              disabled={!receberPagamentoAgora || !controlarTrocoCadastro}
+            />
+            <small className="formHelp">
+              Exemplo: mensalidade R$ 90,00 e aluno entregou R$ 100,00.
+            </small>
+          </div>
+
+          <div className="formGroup">
+            <label>Status do caixa</label>
+            <div className={`cadastroPagamentoStatus ${!receberPagamentoAgora ? "pendente" : valorFaltanteCadastro > 0 ? "erro" : "ok"}`}>
+              {!receberPagamentoAgora
+                ? "Pagamento pendente"
+                : valorFaltanteCadastro > 0
+                ? `Falta ${formatarDinheiro(valorFaltanteCadastro)}`
+                : valorDevolucaoCadastro > 0
+                ? `Devolver ${formatarDinheiro(valorDevolucaoCadastro)}`
+                : "Pagamento exato"}
+            </div>
+          </div>
+        </div>
+
+        {receberPagamentoAgora && (
+          <div className={`pagamentoResumoTroco cadastroResumoPagamento ${!controlarTrocoCadastro ? "trocoDesativado" : ""}`}>
+            <div>
+              <span>Mensalidade</span>
+              <strong>{formatarDinheiro(valorMensalidadeCadastro)}</strong>
+            </div>
+
+            <div>
+              <span>Valor entregue</span>
+              <strong>{formatarDinheiro(controlarTrocoCadastro ? valorRecebidoCadastro : valorMensalidadeCadastro)}</strong>
+            </div>
+
+            <div className={valorFaltanteCadastro > 0 ? "valorInsuficiente" : valorDevolucaoCadastro > 0 ? "trocoPositivo" : ""}>
+              <span>{valorFaltanteCadastro > 0 ? "Falta" : "Devolver"}</span>
+              <strong>
+                {valorFaltanteCadastro > 0
+                  ? formatarDinheiro(valorFaltanteCadastro)
+                  : formatarDinheiro(valorDevolucaoCadastro)}
+              </strong>
+            </div>
+          </div>
+        )}
 
         <div className="sectionTitle">
           <Camera size={20} />

@@ -1099,7 +1099,7 @@ button:hover {
 .clientesResumo {
   margin-top: 32px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 18px;
 }
 
@@ -4614,4 +4614,37 @@ textarea:focus {
 
 .divider.mini {
   margin: 14px 0 20px;
+}
+
+
+/* ===================== */
+/* PAGAMENTO NO CADASTRO */
+/* ===================== */
+
+.cadastroPagamentoStatus {
+  min-height: 46px;
+  border: 1px solid rgba(0, 230, 118, 0.32);
+  border-radius: 13px;
+  background: rgba(0, 230, 118, 0.08);
+  color: var(--cor-principal, #00e676);
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  font-weight: 900;
+}
+
+.cadastroPagamentoStatus.pendente {
+  border-color: rgba(255, 200, 87, 0.38);
+  background: rgba(255, 200, 87, 0.08);
+  color: #ffc857;
+}
+
+.cadastroPagamentoStatus.erro {
+  border-color: rgba(255, 77, 125, 0.44);
+  background: rgba(255, 77, 125, 0.08);
+  color: #ff4d7d;
+}
+
+.cadastroResumoPagamento {
+  margin-bottom: 30px;
 }

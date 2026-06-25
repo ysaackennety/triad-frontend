@@ -84,8 +84,11 @@ export default function TelaFinanceiro({ membros, abrirPagamento, configuracoes 
   }, 0);
 
   const pix = pagamentosDoMes.filter((pagamento) => pagamento.forma === "PIX");
-  const cartao = pagamentosDoMes.filter(
-    (pagamento) => pagamento.forma === "CARTAO"
+  const credito = pagamentosDoMes.filter(
+    (pagamento) => pagamento.forma === "CREDITO" || pagamento.forma === "CARTAO"
+  );
+  const debito = pagamentosDoMes.filter(
+    (pagamento) => pagamento.forma === "DEBITO"
   );
   const dinheiro = pagamentosDoMes.filter(
     (pagamento) => pagamento.forma === "DINHEIRO"
@@ -96,7 +99,12 @@ export default function TelaFinanceiro({ membros, abrirPagamento, configuracoes 
     0
   );
 
-  const totalCartao = cartao.reduce(
+  const totalCredito = credito.reduce(
+    (total, pagamento) => total + converterValor(pagamento.valor),
+    0
+  );
+
+  const totalDebito = debito.reduce(
     (total, pagamento) => total + converterValor(pagamento.valor),
     0
   );
@@ -106,7 +114,7 @@ export default function TelaFinanceiro({ membros, abrirPagamento, configuracoes 
     0
   );
 
-  const maiorForma = Math.max(totalPix, totalCartao, totalDinheiro, 1);
+  const maiorForma = Math.max(totalPix, totalCredito, totalDebito, totalDinheiro, 1);
 
   const porcentagemAtivos =
     totalAlunos === 0 ? 0 : Math.round((alunosAtivos / totalAlunos) * 100);
@@ -173,9 +181,15 @@ export default function TelaFinanceiro({ membros, abrirPagamento, configuracoes 
         </div>
 
         <div className="financeiroMetodoCard">
-          <strong>{formatarDinheiro(totalCartao)}</strong>
+          <strong>{formatarDinheiro(totalCredito)}</strong>
           <span>Cartão de crédito</span>
-          <p>{cartao.length} pagamento(s)</p>
+          <p>{credito.length} pagamento(s)</p>
+        </div>
+
+        <div className="financeiroMetodoCard">
+          <strong>{formatarDinheiro(totalDebito)}</strong>
+          <span>Cartão de débito</span>
+          <p>{debito.length} pagamento(s)</p>
         </div>
 
         <div className="financeiroMetodoCard">
@@ -272,14 +286,30 @@ export default function TelaFinanceiro({ membros, abrirPagamento, configuracoes 
             <div>
               <strong>Cartão de crédito</strong>
               <span>
-                {cartao.length} pagamento(s) • {formatarDinheiro(totalCartao)}
+                {credito.length} pagamento(s) • {formatarDinheiro(totalCredito)}
               </span>
             </div>
 
             <div className="metodoBarraFundo">
               <div
                 className="metodoCartao"
-                style={{ width: `${(totalCartao / maiorForma) * 100}%` }}
+                style={{ width: `${(totalCredito / maiorForma) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+
+          <div className="metodoBarra">
+            <div>
+              <strong>Cartão de débito</strong>
+              <span>
+                {debito.length} pagamento(s) • {formatarDinheiro(totalDebito)}
+              </span>
+            </div>
+
+            <div className="metodoBarraFundo">
+              <div
+                className="metodoCartao"
+                style={{ width: `${(totalDebito / maiorForma) * 100}%` }}
               ></div>
             </div>
           </div>

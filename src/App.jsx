@@ -28,6 +28,7 @@ import {
 } from "./data/defaults";
 import {
   carregarConfiguracoesSalvas,
+  carregarMembrosSalvos,
   carregarFuncionariosSalvos,
   carregarProdutosBalcaoSalvos,
   carregarVendasBalcaoSalvas,
@@ -59,7 +60,7 @@ import CadastroMembro from "./pages/CadastroMembro";
 
 export default function App() {
   const [paginaAtual, setPaginaAtual] = useState("acesso");
-  const [membros, setMembros] = useState(membrosMock);
+  const [membros, setMembros] = useState(carregarMembrosSalvos);
   const [membroSelecionado, setMembroSelecionado] = useState(null);
   const [mensagemLeitor, setMensagemLeitor] = useState(
     "Clique ou encoste o dedo para simular a leitura"
@@ -100,6 +101,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    localStorage.setItem("triad_membros", JSON.stringify(membros));
+  }, [membros]);
+
+  useEffect(() => {
     localStorage.setItem("triad_funcionarios", JSON.stringify(funcionarios));
   }, [funcionarios]);
 
@@ -136,9 +141,14 @@ export default function App() {
   }, [configuracoes]);
 
   function abrirCadastro() {
+    const valorPadrao = configuracoes.valorMensalidadePadrao || "";
+
     setFormulario({
       ...formularioInicial,
-      valorPlano: configuracoes.valorMensalidadePadrao || "",
+      valorPlano: valorPadrao,
+      receberPagamentoCadastro: "sim",
+      formaPagamentoCadastro: configuracoes.formaPagamentoPadrao || "PIX",
+      valorRecebidoCadastro: valorPadrao,
     });
     setPaginaAtual("cadastro");
   }
@@ -197,6 +207,58 @@ export default function App() {
     }
 
     const valorPlanoFinal = formulario.valorPlano || configuracoes.valorMensalidadePadrao || "0,00";
+    const receberPagamentoAgora = formulario.receberPagamentoCadastro !== "nao";
+    const controlarTroco = configuracoes.controlarTrocoDevolucao !== "nao";
+    const valorMensalidade = converterValor(valorPlanoFinal);
+    const valorRecebido = controlarTroco
+      ? converterValor(formulario.valorRecebidoCadastro || valorPlanoFinal)
+      : valorMensalidade;
+
+    if (receberPagamentoAgora) {
+      if (!formulario.formaPagamentoCadastro) {
+        alert("Informe a forma de pagamento inicial do aluno.");
+        return;
+      }
+
+      if (valorMensalidade <= 0) {
+        alert("Informe um valor válido para a mensalidade.");
+        return;
+      }
+
+      if (controlarTroco && valorRecebido < valorMensalidade) {
+        alert(
+          `Valor entregue pelo aluno é menor que a mensalidade. Falta ${formatarDinheiro(
+            valorMensalidade - valorRecebido
+          )} para completar.`
+        );
+        return;
+      }
+    }
+
+    const valorDevolvido = receberPagamentoAgora && controlarTroco
+      ? Math.max(valorRecebido - valorMensalidade, 0)
+      : 0;
+
+    const dataHoje = pegarDataHoje();
+    const novoPagamentoCadastro = receberPagamentoAgora
+      ? {
+          id: Date.now(),
+          data: dataHoje,
+          horario: new Date().toLocaleTimeString("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          origem: "CADASTRO",
+          valor: formatarValorParaCampo(valorMensalidade),
+          valorRecebido: formatarValorParaCampo(valorRecebido),
+          troco: formatarValorParaCampo(valorDevolvido),
+          valorDevolvido: formatarValorParaCampo(valorDevolvido),
+          controleTroco: controlarTroco ? "sim" : "nao",
+          forma: formulario.formaPagamentoCadastro || configuracoes.formaPagamentoPadrao || "PIX",
+          vencimentoAnterior: "Cadastro inicial",
+          novoVencimento: formulario.vencimento,
+        }
+      : null;
 
     const novoMembro = {
       id: Date.now(),
@@ -214,19 +276,41 @@ export default function App() {
       bairro: formulario.bairro,
       rua: formulario.rua,
       numero: formulario.numero,
-      pagamentos: [],
+      pagamentos: novoPagamentoCadastro ? [novoPagamentoCadastro] : [],
     };
 
     setMembros((listaAtual) => [novoMembro, ...listaAtual]);
     setMembroSelecionado(novoMembro);
-    setMensagemLeitor("Membro cadastrado com foto e digital");
+    setMensagemLeitor(
+      receberPagamentoAgora
+        ? "Membro cadastrado com pagamento inicial registrado"
+        : "Membro cadastrado sem pagamento inicial"
+    );
     setStatusLeitura("parado");
     setUltimoAcesso(null);
+
+    const valorPadrao = configuracoes.valorMensalidadePadrao || "";
+
     setFormulario({
       ...formularioInicial,
-      valorPlano: configuracoes.valorMensalidadePadrao || "",
+      valorPlano: valorPadrao,
+      receberPagamentoCadastro: "sim",
+      formaPagamentoCadastro: configuracoes.formaPagamentoPadrao || "PIX",
+      valorRecebidoCadastro: valorPadrao,
     });
     setPaginaAtual("acesso");
+
+    if (receberPagamentoAgora) {
+      alert(
+        controlarTroco && valorDevolvido > 0
+          ? `Aluno cadastrado e pagamento inicial registrado em ${formatarFormaPagamento(
+              novoPagamentoCadastro.forma
+            )}. Devolver ao aluno: ${formatarDinheiro(valorDevolvido)}.`
+          : `Aluno cadastrado e pagamento inicial registrado em ${formatarFormaPagamento(
+              novoPagamentoCadastro.forma
+            )}.`
+      );
+    }
   }
 
   function simularLeitura() {
