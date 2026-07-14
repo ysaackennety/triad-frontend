@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Login from "./components/Login/Login";
 import {
   carregarSessaoLogin,
@@ -25,6 +25,7 @@ import {
   funcionarioInicial,
   produtoBalcaoInicial,
   vendaBalcaoInicial,
+  configuracoesPadrao,
 } from "./data/defaults";
 import {
   carregarConfiguracoesSalvas,
@@ -44,6 +45,9 @@ import {
   formatarData,
   formatarPermissao,
   calcularTotalVendaBalcao,
+  pegarPermissaoPorTipo,
+  verificarHorarioPermitido,
+  carregarHistoricoAcessosSalvo,
 } from "./utils/helpers";
 
 import MenuItem from "./components/MenuItem";
@@ -57,17 +61,47 @@ import TelaConfiguracoes from "./pages/TelaConfiguracoes";
 import TelaVendasBalcao from "./pages/TelaVendasBalcao";
 import TelaFuncionarios from "./pages/TelaFuncionarios";
 import CadastroMembro from "./pages/CadastroMembro";
+import {
+  aguardarBiometria,
+  buscarAlunoPorId,
+  capturarBiometria,
+  criarAluno,
+  extrairAluno,
+  extrairAlunoId,
+  extrairStatusBiometria,
+  liberarCatraca,
+  registrarAcesso,
+  testarEquipamentos,
+} from "./services/api";
+import {
+  montarPayloadAcesso,
+  montarPayloadAluno,
+  normalizarAlunoBackend,
+} from "./services/contratos";
+import TelaAluno from "./pages/TelaAluno";
 
 export default function App() {
+  const ehTelaAluno = new URLSearchParams(window.location.search).get("tela") === "aluno";
   const [paginaAtual, setPaginaAtual] = useState("acesso");
   const [membros, setMembros] = useState(carregarMembrosSalvos);
   const [membroSelecionado, setMembroSelecionado] = useState(null);
   const [mensagemLeitor, setMensagemLeitor] = useState(
-    "Clique ou encoste o dedo para simular a leitura"
+    "Aguardando o aluno colocar o dedo no leitor"
   );
-  const [statusLeitura, setStatusLeitura] = useState("parado");
+  const [statusLeitura, setStatusLeitura] = useState("aguardando");
   const [ultimoAcesso, setUltimoAcesso] = useState(null);
-  const [acessosHoje, setAcessosHoje] = useState(2);
+  const [historicoAcessos, setHistoricoAcessos] = useState(
+    carregarHistoricoAcessosSalvo
+  );
+  const [acessosHoje, setAcessosHoje] = useState(() => {
+    const hoje = pegarDataHoje();
+    return carregarHistoricoAcessosSalvo().filter(
+      (acesso) => acesso.liberado && String(acesso.dataHora || "").startsWith(hoje)
+    ).length;
+  });
+  const [statusBackend, setStatusBackend] = useState("conectando");
+  const [monitorBiometriaAtivo, setMonitorBiometriaAtivo] = useState(true);
+  const resetAcessoTimerRef = useRef(null);
   const [hora, setHora] = useState("");
   const [busca, setBusca] = useState("");
   const [formulario, setFormulario] = useState(formularioInicial);
@@ -116,9 +150,30 @@ export default function App() {
     localStorage.setItem("triad_vendas_balcao", JSON.stringify(vendasBalcao));
   }, [vendasBalcao]);
 
+  useEffect(() => {
+    localStorage.setItem(
+      "triad_historico_acessos",
+      JSON.stringify(historicoAcessos.slice(0, 500))
+    );
+  }, [historicoAcessos]);
+
+  useEffect(() => {
+    return () => {
+      if (resetAcessoTimerRef.current) {
+        clearTimeout(resetAcessoTimerRef.current);
+      }
+    };
+  }, []);
+
   const membrosFiltrados = useMemo(() => {
+    const termo = String(busca || "").trim().toLowerCase();
+
+    if (!termo) return membros;
+
     return membros.filter((membro) =>
-      membro.nome.toLowerCase().includes(busca.toLowerCase())
+      [membro.nome, membro.cpf, membro.telefone, membro.email]
+        .filter(Boolean)
+        .some((valor) => String(valor).toLowerCase().includes(termo))
     );
   }, [membros, busca]);
 
@@ -139,6 +194,338 @@ export default function App() {
   const temaSistema = useMemo(() => {
     return montarVariaveisTema(configuracoes);
   }, [configuracoes]);
+
+  const publicarResultadoTelaAluno = useCallback((resultado) => {
+    if (resultado) {
+      localStorage.setItem("triad_ultimo_acesso_tela", JSON.stringify(resultado));
+    } else {
+      localStorage.removeItem("triad_ultimo_acesso_tela");
+    }
+
+    if ("BroadcastChannel" in window) {
+      const canal = new BroadcastChannel("triad-acesso-aluno");
+      canal.postMessage(resultado);
+      canal.close();
+    }
+  }, []);
+
+  const voltarParaEsperaBiometria = useCallback(() => {
+    setStatusLeitura("aguardando");
+    setUltimoAcesso(null);
+    setMembroSelecionado(null);
+    setMensagemLeitor("Aguardando o aluno colocar o dedo no leitor");
+    publicarResultadoTelaAluno(null);
+  }, [publicarResultadoTelaAluno]);
+
+  const agendarVoltaParaEspera = useCallback(() => {
+    if (resetAcessoTimerRef.current) {
+      clearTimeout(resetAcessoTimerRef.current);
+    }
+
+    resetAcessoTimerRef.current = setTimeout(
+      voltarParaEsperaBiometria,
+      Number(configuracoes.tempoExibicaoResultado || 6000)
+    );
+  }, [configuracoes.tempoExibicaoResultado, voltarParaEsperaBiometria]);
+
+  const salvarResultadoAcesso = useCallback(
+    (resultado) => {
+      setUltimoAcesso(resultado);
+      setHistoricoAcessos((historicoAtual) => [
+        resultado,
+        ...historicoAtual,
+      ].slice(0, 500));
+      publicarResultadoTelaAluno(resultado);
+      agendarVoltaParaEspera();
+    },
+    [agendarVoltaParaEspera, publicarResultadoTelaAluno]
+  );
+
+  const processarAlunoIdentificado = useCallback(
+    async (alunoRecebido, eventoBiometria = {}) => {
+      const aluno = normalizarAlunoBackend(alunoRecebido);
+
+      setStatusLeitura("lendo");
+      setUltimoAcesso(null);
+      setMembroSelecionado(aluno);
+      setMensagemLeitor(configuracoes.mensagemLeitura);
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.min(Number(configuracoes.tempoLeituraBiometria || 900), 1200))
+      );
+
+      const mensalidadeAtiva = verificarAtivoComTolerancia(
+        aluno.vencimento,
+        configuracoes.diasTolerancia
+      );
+      const dentroDoHorario = verificarHorarioPermitido(
+        configuracoes.horarioAbertura,
+        configuracoes.horarioFechamento
+      );
+      const cadastroAtivo = aluno.ativo !== false && aluno.ativo !== "nao";
+
+      let liberado = true;
+      let motivo = "Acesso liberado";
+
+      if (!cadastroAtivo) {
+        liberado = false;
+        motivo = "Cadastro bloqueado";
+      } else if (configuracoes.bloquearVencidos === "sim" && !mensalidadeAtiva) {
+        liberado = false;
+        motivo = "Mensalidade vencida";
+      } else if (!dentroDoHorario) {
+        liberado = false;
+        motivo = `Fora do horário permitido (${configuracoes.horarioAbertura} às ${configuracoes.horarioFechamento})`;
+      }
+
+      const payloadAcesso = montarPayloadAcesso({
+        eventoBiometria,
+        aluno,
+        liberado,
+        motivo,
+        configuracoes,
+      });
+
+      if (
+        liberado &&
+        configuracoes.modoLeitorBiometrico !== "simulacao" &&
+        eventoBiometria.origem !== "simulacao"
+      ) {
+        try {
+          await liberarCatraca({
+            alunoId: aluno.id,
+            eventoId: payloadAcesso.eventoId,
+            porta: configuracoes.portaCatraca,
+            velocidade: Number(configuracoes.velocidadeCatraca || 9600),
+            comando: configuracoes.comandoLiberacao,
+          });
+        } catch (erro) {
+          liberado = false;
+          motivo = "Aluno autorizado, mas a catraca não respondeu";
+          payloadAcesso.liberado = false;
+          payloadAcesso.motivo = motivo;
+          console.error("Falha ao liberar catraca:", erro);
+        }
+      }
+
+      const mensagem = liberado
+        ? `${textoComAluno(configuracoes.mensagemBoasVindas, aluno.nome)} ${configuracoes.mensagemBomTreino}`
+        : `${motivo}. ${configuracoes.mensagemAcessoNegado}`;
+
+      const resultado = {
+        ...aluno,
+        ...payloadAcesso,
+        liberado,
+        motivo,
+        mensagem,
+        dataHora: new Date().toISOString(),
+      };
+
+      setStatusLeitura(liberado ? "sucesso" : "erro");
+      setMensagemLeitor(mensagem);
+      salvarResultadoAcesso(resultado);
+
+      if (liberado) {
+        setAcessosHoje((valorAtual) => valorAtual + 1);
+      }
+
+      if (
+        configuracoes.modoLeitorBiometrico !== "simulacao" &&
+        eventoBiometria.origem !== "simulacao"
+      ) {
+        registrarAcesso(payloadAcesso).catch((erro) => {
+          console.error("Não foi possível registrar o acesso no backend:", erro);
+        });
+      }
+    },
+    [configuracoes, salvarResultadoAcesso]
+  );
+
+  const mostrarDigitalNaoReconhecida = useCallback(
+    (eventoBiometria = {}) => {
+      const resultado = {
+        id: null,
+        alunoId: null,
+        nome: "Digital não reconhecida",
+        foto: "",
+        valorPlano: "0,00",
+        vencimento: "",
+        liberado: false,
+        motivo: "Biometria não encontrada no banco de dados",
+        mensagem: "Digital não reconhecida. Procure a recepção.",
+        eventoId: eventoBiometria.eventoId || eventoBiometria.id || `front-${Date.now()}`,
+        qualidade: eventoBiometria.qualidade || null,
+        dataHora: new Date().toISOString(),
+      };
+
+      setMembroSelecionado(null);
+      setStatusLeitura("erro");
+      setMensagemLeitor(resultado.mensagem);
+      salvarResultadoAcesso(resultado);
+
+      if (configuracoes.modoLeitorBiometrico !== "simulacao") {
+        registrarAcesso(resultado).catch(() => {});
+      }
+    },
+    [configuracoes.modoLeitorBiometrico, salvarResultadoAcesso]
+  );
+
+  const processarEventoBiometria = useCallback(
+    async (eventoBiometria) => {
+      const status = extrairStatusBiometria(eventoBiometria);
+
+      if (!eventoBiometria || status === "aguardando" || status === "timeout") {
+        setStatusLeitura("aguardando");
+        setMensagemLeitor("Aguardando o aluno colocar o dedo no leitor");
+        return;
+      }
+
+      if (
+        status.includes("nao_identificado") ||
+        status.includes("não_identificado") ||
+        status.includes("desconhecido")
+      ) {
+        mostrarDigitalNaoReconhecida(eventoBiometria);
+        return;
+      }
+
+      setStatusLeitura("lendo");
+      setMensagemLeitor(configuracoes.mensagemLeitura);
+
+      let aluno = extrairAluno(eventoBiometria);
+      const alunoId = extrairAlunoId(eventoBiometria);
+
+      if (!aluno && alunoId) {
+        try {
+          const respostaAluno = await buscarAlunoPorId(alunoId);
+          aluno = extrairAluno(respostaAluno) || respostaAluno;
+        } catch (erro) {
+          aluno = membros.find((membro) => String(membro.id) === String(alunoId));
+          if (!aluno) console.error("Aluno identificado, mas não encontrado:", erro);
+        }
+      }
+
+      if (!aluno) {
+        mostrarDigitalNaoReconhecida(eventoBiometria);
+        return;
+      }
+
+      await processarAlunoIdentificado(aluno, eventoBiometria);
+    },
+    [configuracoes.mensagemLeitura, membros, mostrarDigitalNaoReconhecida, processarAlunoIdentificado]
+  );
+
+  useEffect(() => {
+    const modo = configuracoes.modoLeitorBiometrico;
+
+    if (
+      ehTelaAluno ||
+      !usuarioLogado ||
+      paginaAtual !== "acesso" ||
+      !monitorBiometriaAtivo ||
+      modo === "simulacao"
+    ) {
+      if (modo === "simulacao") setStatusBackend("simulacao");
+      return undefined;
+    }
+
+    let ativo = true;
+    const controller = new AbortController();
+
+    async function monitorar() {
+      setStatusBackend("conectando");
+      setStatusLeitura("aguardando");
+      setMensagemLeitor("Conectando ao leitor biométrico...");
+
+      while (ativo) {
+        try {
+          const evento = await aguardarBiometria(controller.signal);
+          if (!ativo) return;
+
+          setStatusBackend("online");
+          await processarEventoBiometria(evento);
+        } catch (erro) {
+          if (!ativo || erro?.name === "AbortError") return;
+
+          setStatusBackend("offline");
+          setStatusLeitura("offline");
+          setMensagemLeitor(
+            modo === "misto"
+              ? "Backend desconectado. O modo de demonstração continua disponível."
+              : "Leitor/backend desconectado. Verifique o serviço local."
+          );
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        }
+      }
+    }
+
+    monitorar();
+
+    return () => {
+      ativo = false;
+      controller.abort();
+    };
+  }, [
+    configuracoes.modoLeitorBiometrico,
+    ehTelaAluno,
+    monitorBiometriaAtivo,
+    paginaAtual,
+    processarEventoBiometria,
+    usuarioLogado,
+  ]);
+
+  function abrirTelaAluno() {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tela", "aluno");
+    window.open(url.toString(), "triad-tela-aluno", "width=1100,height=720");
+  }
+
+  async function capturarDigitalIntegrada({ leituraNumero, totalLeituras, tipoPessoa = "aluno" }) {
+    if (configuracoes.modoLeitorBiometrico === "simulacao") return null;
+
+    try {
+      const resposta = await capturarBiometria({
+        tipoPessoa,
+        pessoaId: null,
+        leituraNumero,
+        totalLeituras,
+        leitor: configuracoes.leitorBiometrico,
+      });
+      setStatusBackend("online");
+      return resposta;
+    } catch (erro) {
+      setStatusBackend("offline");
+
+      if (configuracoes.modoLeitorBiometrico === "real") {
+        throw erro;
+      }
+
+      return null;
+    }
+  }
+
+  async function testarIntegracaoEquipamentos() {
+    if (configuracoes.modoLeitorBiometrico === "simulacao") {
+      alert(
+        "O sistema está no modo Simulação. Altere para Misto ou Leitor real para testar o backend e a catraca."
+      );
+      return;
+    }
+
+    try {
+      const resposta = await testarEquipamentos({
+        leitor: configuracoes.leitorBiometrico,
+        porta: configuracoes.portaCatraca,
+        velocidade: Number(configuracoes.velocidadeCatraca || 9600),
+        comando: configuracoes.comandoLiberacao,
+      });
+      setStatusBackend("online");
+      alert(resposta?.mensagem || "Backend, leitor e catraca responderam ao teste.");
+    } catch (erro) {
+      setStatusBackend("offline");
+      alert(`Falha no teste dos equipamentos: ${erro.message}`);
+    }
+  }
 
   function abrirCadastro() {
     const valorPadrao = configuracoes.valorMensalidadePadrao || "";
@@ -180,7 +567,7 @@ export default function App() {
     }));
   }
 
-  function cadastrarMembro(evento) {
+  async function cadastrarMembro(evento) {
     evento.preventDefault();
 
     if (
@@ -203,6 +590,17 @@ export default function App() {
 
     if (!formulario.digital) {
       alert("Cadastre a digital do aluno antes de salvar.");
+      return;
+    }
+
+    const cpfNormalizado = String(formulario.cpf || "").replace(/\D/g, "");
+    const cpfJaCadastrado = membros.some(
+      (membro) =>
+        String(membro.cpf || "").replace(/\D/g, "") === cpfNormalizado
+    );
+
+    if (cpfJaCadastrado) {
+      alert("Já existe um aluno cadastrado com este CPF.");
       return;
     }
 
@@ -260,7 +658,7 @@ export default function App() {
         }
       : null;
 
-    const novoMembro = {
+    const novoMembroLocal = {
       id: Date.now(),
       nome: formulario.nome,
       cpf: formulario.cpf,
@@ -271,13 +669,57 @@ export default function App() {
       valorPlano: valorPlanoFinal,
       vencimento: formulario.vencimento,
       foto: formulario.foto,
-      digital: formulario.digital,
+      digital:
+        typeof formulario.digital === "string"
+          ? formulario.digital
+          : formulario.digital?.templateId || formulario.digital?.id,
       cidade: formulario.cidade,
       bairro: formulario.bairro,
       rua: formulario.rua,
       numero: formulario.numero,
       pagamentos: novoPagamentoCadastro ? [novoPagamentoCadastro] : [],
     };
+
+    let novoMembro = novoMembroLocal;
+
+    if (configuracoes.modoLeitorBiometrico !== "simulacao") {
+      const payloadAluno = montarPayloadAluno({
+        formulario: { ...formulario, valorPlano: valorPlanoFinal },
+        pagamentoInicial: novoPagamentoCadastro
+          ? {
+              valorNumerico: valorMensalidade,
+              valorRecebidoNumerico: valorRecebido,
+              trocoNumerico: valorDevolvido,
+              forma: novoPagamentoCadastro.forma,
+              data: novoPagamentoCadastro.data,
+              horario: novoPagamentoCadastro.horario,
+            }
+          : null,
+      });
+
+      try {
+        const resposta = await criarAluno(payloadAluno);
+        novoMembro = normalizarAlunoBackend(
+          extrairAluno(resposta) || resposta,
+          novoMembroLocal
+        );
+        setStatusBackend("online");
+      } catch (erro) {
+        setStatusBackend("offline");
+        console.error("Erro ao salvar aluno no backend:", erro);
+
+        if (configuracoes.modoLeitorBiometrico === "real") {
+          alert(
+            `Não foi possível salvar o aluno no backend: ${erro.message}. O cadastro não foi concluído.`
+          );
+          return;
+        }
+
+        alert(
+          "Backend desconectado. Como o sistema está no modo misto, o aluno foi salvo localmente para demonstração."
+        );
+      }
+    }
 
     setMembros((listaAtual) => [novoMembro, ...listaAtual]);
     setMembroSelecionado(novoMembro);
@@ -316,65 +758,24 @@ export default function App() {
   function simularLeitura() {
     if (statusLeitura === "lendo") return;
 
-    if (!membroSelecionado) {
+    const alunoParaSimular =
+      membroSelecionado || membros.find((membro) => Boolean(membro.digital));
+
+    if (!alunoParaSimular) {
       setStatusLeitura("erro");
-      setUltimoAcesso(null);
-      setMensagemLeitor("Selecione um aluno primeiro na lista");
+      setMensagemLeitor(
+        "Cadastre um aluno com digital para testar o modo de demonstração."
+      );
       return;
     }
 
-    if (!membroSelecionado.digital && configuracoes.liberarSemDigital !== "sim") {
-      setStatusLeitura("erro");
-      setUltimoAcesso({
-        ...membroSelecionado,
-        liberado: false,
-        motivo: "Digital não cadastrada",
-      });
-      setMensagemLeitor("Este aluno não possui digital cadastrada");
-      return;
-    }
-
-    setStatusLeitura("lendo");
-    setUltimoAcesso(null);
-    setMensagemLeitor(configuracoes.mensagemLeitura);
-
-    const tempoLeitura = Number(configuracoes.tempoLeituraBiometria || 1700);
-
-    setTimeout(() => {
-      const ativo = verificarAtivoComTolerancia(
-        membroSelecionado.vencimento,
-        configuracoes.diasTolerancia
-      );
-
-      if (configuracoes.bloquearVencidos === "sim" && !ativo) {
-        setStatusLeitura("erro");
-        setUltimoAcesso({
-          ...membroSelecionado,
-          liberado: false,
-          motivo: "Mensalidade vencida",
-        });
-
-        setMensagemLeitor(
-          `${membroSelecionado.nome} está vencido. Acesso negado.`
-        );
-        return;
-      }
-
-      const mensagemBoasVindas = textoComAluno(
-        configuracoes.mensagemBoasVindas,
-        membroSelecionado.nome
-      );
-
-      setStatusLeitura("sucesso");
-      setUltimoAcesso({
-        ...membroSelecionado,
-        liberado: true,
-        motivo: "Acesso liberado",
-      });
-
-      setMensagemLeitor(`${mensagemBoasVindas} ${configuracoes.mensagemBomTreino}`);
-      setAcessosHoje((valorAtual) => valorAtual + 1);
-    }, tempoLeitura);
+    processarAlunoIdentificado(alunoParaSimular, {
+      eventoId: `SIM-${Date.now()}`,
+      biometriaId: alunoParaSimular.digital,
+      qualidade: 98,
+      status: "identificado",
+      origem: "simulacao",
+    });
   }
 
   function excluirMembro(id) {
@@ -851,6 +1252,10 @@ export default function App() {
     alert("Configurações restauradas para o padrão.");
   }
 
+  if (ehTelaAluno) {
+    return <TelaAluno configuracoes={configuracoes} />;
+  }
+
   if (!usuarioLogado) {
     return (
       <Login
@@ -980,6 +1385,7 @@ export default function App() {
               alterarCampo={alterarCampo}
               alterarFoto={alterarFoto}
               alterarDigital={alterarDigital}
+              capturarDigitalIntegrada={capturarDigitalIntegrada}
               cadastrarMembro={cadastrarMembro}
               voltarParaAcesso={voltarParaAcesso}
             />
@@ -999,7 +1405,7 @@ export default function App() {
           ) : paginaAtual === "financeiro" ? (
             <TelaFinanceiro membros={membros} abrirPagamento={abrirPagamento} configuracoes={configuracoes} vendasBalcao={vendasBalcao} />
           ) : paginaAtual === "relatorios" ? (
-            <TelaRelatorios membros={membros} acessosHoje={acessosHoje} configuracoes={configuracoes} vendasBalcao={vendasBalcao} />
+            <TelaRelatorios membros={membros} acessosHoje={acessosHoje} historicoAcessos={historicoAcessos} configuracoes={configuracoes} vendasBalcao={vendasBalcao} />
           ) : paginaAtual === "funcionarios" ? (
             <TelaFuncionarios
               funcionarios={funcionarios}
@@ -1035,6 +1441,8 @@ export default function App() {
               removerLogoConfiguracao={removerLogoConfiguracao}
               salvarConfiguracoes={salvarConfiguracoes}
               restaurarConfiguracoes={restaurarConfiguracoes}
+              testarIntegracaoEquipamentos={testarIntegracaoEquipamentos}
+              statusBackend={statusBackend}
             />
           ) : (
             <TelaAcesso
@@ -1054,6 +1462,10 @@ export default function App() {
               busca={busca}
               setBusca={setBusca}
               simularLeitura={simularLeitura}
+              statusBackend={statusBackend}
+              monitorBiometriaAtivo={monitorBiometriaAtivo}
+              setMonitorBiometriaAtivo={setMonitorBiometriaAtivo}
+              abrirTelaAluno={abrirTelaAluno}
               excluirMembro={excluirMembro}
             />
           )}

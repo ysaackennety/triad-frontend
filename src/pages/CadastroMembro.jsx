@@ -57,6 +57,7 @@ export default function CadastroMembro({
   alterarCampo,
   alterarFoto,
   alterarDigital,
+  capturarDigitalIntegrada,
   cadastrarMembro,
   voltarParaAcesso,
 }) {
@@ -68,6 +69,7 @@ export default function CadastroMembro({
 
   const totalLeiturasDigitais = 4;
   const [capturandoDigital, setCapturandoDigital] = useState(false);
+  const [cadastroDigitalIniciado, setCadastroDigitalIniciado] = useState(false);
   const [leiturasDigital, setLeiturasDigital] = useState([]);
   const [mensagemDigital, setMensagemDigital] = useState(
     "Inicie o cadastro e peça para o aluno colocar o dedo no leitor."
@@ -126,53 +128,95 @@ export default function CadastroMembro({
 
   function iniciarCadastroDigital() {
     alterarDigital("");
+    setCadastroDigitalIniciado(true);
     setLeiturasDigital([]);
     setMensagemDigital(
       "Cadastro iniciado. Coloque o dedo no leitor para fazer a primeira leitura."
     );
   }
 
-  function capturarDigital() {
+  async function capturarDigital() {
     if (capturandoDigital) return;
+    if (!cadastroDigitalIniciado) {
+      iniciarCadastroDigital();
+      return;
+    }
     if (leiturasDigital.length >= totalLeiturasDigitais) return;
 
+    const numeroDaLeitura = leiturasDigital.length + 1;
     setCapturandoDigital(true);
-    setMensagemDigital("Lendo digital... mantenha o dedo no leitor.");
+    setMensagemDigital(
+      `Aguardando a leitura ${numeroDaLeitura}. Mantenha o dedo no leitor.`
+    );
 
-    setTimeout(() => {
-      setLeiturasDigital((leiturasAtuais) => {
-        const numeroDaLeitura = leiturasAtuais.length + 1;
-
-        const novaLeitura = {
-          id: Date.now(),
-          numero: numeroDaLeitura,
-          qualidade: Math.floor(Math.random() * 16) + 84,
-        };
-
-        const novasLeituras = [...leiturasAtuais, novaLeitura];
-
-        if (novasLeituras.length >= totalLeiturasDigitais) {
-          const codigoDigital = `DIGITAL-${Date.now()}`;
-
-          alterarDigital(codigoDigital);
-          setMensagemDigital(
-            "Digital cadastrada com sucesso. Todas as leituras foram confirmadas."
-          );
-        } else {
-          setMensagemDigital(
-            `Leitura ${numeroDaLeitura} concluída. Retire o dedo e coloque novamente para a próxima leitura.`
-          );
-        }
-
-        return novasLeituras;
+    try {
+      const respostaBackend = await capturarDigitalIntegrada?.({
+        leituraNumero: numeroDaLeitura,
+        totalLeituras: totalLeiturasDigitais,
+        tipoPessoa: "aluno",
       });
 
+      const qualidade =
+        respostaBackend?.qualidade ||
+        respostaBackend?.data?.qualidade ||
+        Math.floor(Math.random() * 16) + 84;
+      const templateId =
+        respostaBackend?.templateId ||
+        respostaBackend?.biometriaId ||
+        respostaBackend?.digitalId ||
+        respostaBackend?.data?.templateId ||
+        null;
+      const status = String(
+        respostaBackend?.status || respostaBackend?.data?.status || ""
+      ).toLowerCase();
+      const concluidoPeloBackend =
+        Boolean(templateId) || status === "concluido" || status === "cadastrada";
+
+      const novaLeitura = {
+        id: Date.now(),
+        numero: numeroDaLeitura,
+        qualidade,
+      };
+      const novasLeituras = [...leiturasDigital, novaLeitura];
+
+      if (concluidoPeloBackend || novasLeituras.length >= totalLeiturasDigitais) {
+        const digitalFinal = {
+          templateId: templateId || `DIGITAL-DEMO-${Date.now()}`,
+          qualidade,
+          leitor: respostaBackend?.leitor || configuracoes.leitorBiometrico,
+        };
+
+        alterarDigital(digitalFinal);
+        setLeiturasDigital(
+          concluidoPeloBackend && novasLeituras.length < totalLeiturasDigitais
+            ? Array.from({ length: totalLeiturasDigitais }, (_, indice) => ({
+                id: Date.now() + indice,
+                numero: indice + 1,
+                qualidade,
+              }))
+            : novasLeituras
+        );
+        setMensagemDigital(
+          "Digital cadastrada com sucesso e pronta para ser enviada no JSON do aluno."
+        );
+      } else {
+        setLeiturasDigital(novasLeituras);
+        setMensagemDigital(
+          `Leitura ${numeroDaLeitura} concluída. Retire o dedo e coloque novamente.`
+        );
+      }
+    } catch (erro) {
+      setMensagemDigital(
+        `Não foi possível capturar a digital: ${erro.message}. Verifique o backend e o leitor.`
+      );
+    } finally {
       setCapturandoDigital(false);
-    }, 1500);
+    }
   }
 
   function removerDigital() {
     alterarDigital("");
+    setCadastroDigitalIniciado(false);
     setLeiturasDigital([]);
     setMensagemDigital(
       "Digital removida. Inicie novamente o cadastro biométrico."
@@ -543,14 +587,15 @@ export default function CadastroMembro({
           </div>
 
           <div className="digitalActions">
-            {leiturasDigital.length === 0 && !formulario.digital && (
+            {!cadastroDigitalIniciado && !formulario.digital && (
               <button type="button" onClick={iniciarCadastroDigital}>
                 <Fingerprint size={18} />
                 Iniciar cadastro
               </button>
             )}
 
-            {!formulario.digital &&
+            {cadastroDigitalIniciado &&
+              !formulario.digital &&
               leiturasDigital.length < totalLeiturasDigitais && (
                 <button
                   type="button"

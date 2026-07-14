@@ -58,6 +58,8 @@ export default function TelaConfiguracoes({
   removerLogoConfiguracao,
   salvarConfiguracoes,
   restaurarConfiguracoes,
+  testarIntegracaoEquipamentos,
+  statusBackend,
 }) {
   return (
     <div className="configuracoesPage">
@@ -618,7 +620,9 @@ export default function TelaConfiguracoes({
 
           <div className="configTesteBox">
             <div>
-              <strong>Status do equipamento</strong>
+              <strong>
+                Status do equipamento: {statusBackend === "online" ? "Conectado" : statusBackend === "offline" ? "Desconectado" : "Verificando"}
+              </strong>
               <span>
                 Porta {configuracoes.portaCatraca}, velocidade{" "}
                 {configuracoes.velocidadeCatraca}, leitor{" "}
@@ -628,11 +632,7 @@ export default function TelaConfiguracoes({
 
             <button
               type="button"
-              onClick={() =>
-                alert(
-                  `Teste enviado para ${configuracoes.portaCatraca} usando comando ${configuracoes.comandoLiberacao}`
-                )
-              }
+              onClick={testarIntegracaoEquipamentos}
             >
               Testar catraca
             </button>

@@ -295,3 +295,36 @@ export function pegarVendasBalcaoDoMes(vendasBalcao) {
 export function calcularTotalVendaBalcao(produto, quantidade) {
   return converterValor(produto?.valorVenda || "0") * Number(quantidade || 0);
 }
+
+export function verificarHorarioPermitido(
+  horarioAbertura = "00:00",
+  horarioFechamento = "23:59",
+  agora = new Date()
+) {
+  const paraMinutos = (horario) => {
+    const [horas, minutos] = String(horario || "00:00")
+      .split(":")
+      .map(Number);
+    return (horas || 0) * 60 + (minutos || 0);
+  };
+
+  const atual = agora.getHours() * 60 + agora.getMinutes();
+  const abertura = paraMinutos(horarioAbertura);
+  const fechamento = paraMinutos(horarioFechamento);
+
+  if (abertura <= fechamento) {
+    return atual >= abertura && atual <= fechamento;
+  }
+
+  // Horário atravessa a meia-noite, por exemplo 18:00 até 02:00.
+  return atual >= abertura || atual <= fechamento;
+}
+
+export function carregarHistoricoAcessosSalvo() {
+  try {
+    const dados = JSON.parse(localStorage.getItem("triad_historico_acessos") || "[]");
+    return Array.isArray(dados) ? dados : [];
+  } catch {
+    return [];
+  }
+}

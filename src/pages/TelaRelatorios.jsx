@@ -23,6 +23,8 @@ import {
   CameraOff,
   CheckCircle,
   LogOut,
+  Download,
+  Printer,
 } from "lucide-react";
 import {
   configuracoesPadrao,
@@ -51,7 +53,7 @@ import {
   formatarPermissao,
 } from "../utils/helpers";
 
-export default function TelaRelatorios({ membros, acessosHoje, configuracoes = configuracoesPadrao, vendasBalcao = [] }) {
+export default function TelaRelatorios({ membros, acessosHoje, historicoAcessos = [], configuracoes = configuracoesPadrao, vendasBalcao = [] }) {
   const [tipoRelatorio, setTipoRelatorio] = useState("mes");
   const [dataRelatorio, setDataRelatorio] = useState(pegarDataHoje());
   const [dataInicio, setDataInicio] = useState(pegarDataHoje());
@@ -156,6 +158,67 @@ export default function TelaRelatorios({ membros, acessosHoje, configuracoes = c
 
   const pagamentosFiltrados = todosPagamentos.filter(pagamentoDentroDoPeriodo);
   const vendasBalcaoFiltradas = (vendasBalcao || []).filter(pagamentoDentroDoPeriodo);
+  const acessosFiltrados = (historicoAcessos || [])
+    .map((acesso) => ({
+      ...acesso,
+      data: String(acesso.dataHora || acesso.data || "").slice(0, 10),
+      horario:
+        acesso.horario ||
+        (acesso.dataHora
+          ? new Date(acesso.dataHora).toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })
+          : "Não salvo"),
+    }))
+    .filter(pagamentoDentroDoPeriodo);
+
+  const acessosLiberados = acessosFiltrados.filter((acesso) => acesso.liberado).length;
+  const acessosNegados = acessosFiltrados.length - acessosLiberados;
+
+  function escaparCsv(valor) {
+    return `"${String(valor ?? "").replaceAll('"', '""')}"`;
+  }
+
+  function exportarCsv() {
+    const linhas = [
+      ["TIPO", "DATA", "HORÁRIO", "PESSOA/PRODUTO", "STATUS/FORMA", "VALOR/MOTIVO"],
+      ...pagamentosFiltrados.map((pagamento) => [
+        "MENSALIDADE",
+        pagamento.data,
+        pagamento.horario || "",
+        pagamento.alunoNome,
+        formatarFormaPagamento(pagamento.forma),
+        formatarValorParaCampo(pagamento.valorMensalidade),
+      ]),
+      ...vendasBalcaoFiltradas.map((venda) => [
+        "VENDA BALCÃO",
+        venda.data,
+        venda.horario || "",
+        `${venda.produtoNome} x${venda.quantidade}`,
+        formatarFormaPagamento(venda.forma),
+        venda.total,
+      ]),
+      ...acessosFiltrados.map((acesso) => [
+        "ACESSO",
+        acesso.data,
+        acesso.horario,
+        acesso.nome || "Digital desconhecida",
+        acesso.liberado ? "LIBERADO" : "NEGADO",
+        acesso.motivo || "",
+      ]),
+    ];
+
+    const csv = linhas.map((linha) => linha.map(escaparCsv).join(";")).join("\n");
+    const arquivo = new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(arquivo);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `relatorio-triad-${pegarDataHoje()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   const totalVendasBalcao = vendasBalcaoFiltradas.reduce(
     (total, venda) => total + converterValor(venda.total),
@@ -245,9 +308,17 @@ export default function TelaRelatorios({ membros, acessosHoje, configuracoes = c
           <p>Pagamentos separados por dia, semana, mês, ano e período escolhido</p>
         </div>
 
-        <div className="timeBox">
-          <BarChart3 size={18} />
-          <span>{periodoTexto}</span>
+        <div className="headerActions">
+          <div className="timeBox">
+            <BarChart3 size={18} />
+            <span>{periodoTexto}</span>
+          </div>
+          <button type="button" className="secondaryButton" onClick={exportarCsv}>
+            <Download size={18} /> Exportar CSV
+          </button>
+          <button type="button" onClick={() => window.print()}>
+            <Printer size={18} /> Imprimir / PDF
+          </button>
         </div>
       </header>
 
@@ -604,6 +675,42 @@ export default function TelaRelatorios({ membros, acessosHoje, configuracoes = c
                 </div>
               );
             })}
+          </div>
+        )}
+      </section>
+
+      <section className="relatorioPagamentosPanel acessosRelatorioPanel">
+        <div className="relatorioPainelHeader">
+          <div>
+            <Fingerprint size={20} />
+            <span>HISTÓRICO DE ACESSOS</span>
+          </div>
+          <span>{acessosLiberados} liberado(s) • {acessosNegados} negado(s)</span>
+        </div>
+
+        {acessosFiltrados.length === 0 ? (
+          <div className="relatorioVazioGrande">
+            <Fingerprint size={50} />
+            <strong>Nenhum acesso encontrado</strong>
+            <span>Os acessos biométricos aparecerão aqui após as leituras.</span>
+          </div>
+        ) : (
+          <div className="historicoAcessosLista">
+            {acessosFiltrados.map((acesso, indice) => (
+              <div className={`historicoAcessoItem ${acesso.liberado ? "liberado" : "negado"}`} key={`${acesso.eventoId || acesso.id}-${indice}`}>
+                <div className="historicoAcessoFoto">
+                  {acesso.foto ? <img src={acesso.foto} alt={acesso.nome} /> : <Fingerprint size={24} />}
+                </div>
+                <div>
+                  <strong>{acesso.nome || "Digital não reconhecida"}</strong>
+                  <span>{formatarData(acesso.data)} às {acesso.horario}</span>
+                </div>
+                <div className="historicoAcessoMotivo">
+                  <strong>{acesso.liberado ? "LIBERADO" : "NEGADO"}</strong>
+                  <span>{acesso.motivo}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>

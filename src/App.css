@@ -4648,3 +4648,441 @@ textarea:focus {
 .cadastroResumoPagamento {
   margin-bottom: 30px;
 }
+
+/* ===================== */
+/* ACESSO BIOMÉTRICO REAL */
+/* ===================== */
+
+.headerActions .secondaryButton {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--cor-texto, #fff);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.acessoPanelHeader,
+.equipamentoAcoes,
+.backendBadge {
+  display: flex;
+  align-items: center;
+}
+
+.acessoPanelHeader {
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.equipamentoAcoes {
+  gap: 10px;
+}
+
+.backendBadge {
+  min-height: 34px;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #b7c0d0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.backendBadge i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffc857;
+  box-shadow: 0 0 12px currentColor;
+}
+
+.backendBadge.online {
+  color: #00e676;
+  border-color: rgba(0, 230, 118, 0.24);
+  background: rgba(0, 230, 118, 0.08);
+}
+
+.backendBadge.online i {
+  background: #00e676;
+}
+
+.backendBadge.offline {
+  color: #ff5c7a;
+  border-color: rgba(255, 92, 122, 0.25);
+  background: rgba(255, 92, 122, 0.08);
+}
+
+.backendBadge.offline i {
+  background: #ff5c7a;
+}
+
+.backendBadge.simulacao {
+  color: #75b7ff;
+  border-color: rgba(117, 183, 255, 0.22);
+  background: rgba(117, 183, 255, 0.08);
+}
+
+.backendBadge.simulacao i {
+  background: #75b7ff;
+}
+
+.monitorToggleButton {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+}
+
+.fingerArea.clicavel {
+  cursor: pointer;
+}
+
+.fingerArea.aguardando .scannerFingerprint {
+  filter: drop-shadow(0 0 20px rgba(0, 230, 118, 0.35));
+}
+
+.fingerArea.offline .scannerFingerprint {
+  color: #ff5c7a;
+  opacity: 0.72;
+}
+
+.fingerArea.aguardando .scannerLine {
+  animation-duration: 2.6s;
+  opacity: 0.55;
+}
+
+.demoHint {
+  display: block;
+  margin-top: 12px;
+  color: var(--cor-texto-suave, #929bad);
+  font-size: 11px;
+}
+
+.acessoSemFoto {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: var(--cor-principal, #00e676);
+  background: rgba(0, 230, 118, 0.08);
+}
+
+/* ===================== */
+/* SEGUNDA TELA DO ALUNO */
+/* ===================== */
+
+.telaAlunoPublica {
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 34px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(0, 230, 118, 0.18), transparent 34%),
+    radial-gradient(circle at 80% 80%, rgba(23, 90, 255, 0.18), transparent 36%),
+    #060a12;
+}
+
+.telaAlunoPublica::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 42px 42px;
+  pointer-events: none;
+}
+
+.telaAlunoPublica.liberado {
+  background:
+    radial-gradient(circle at 50% 35%, rgba(0, 230, 118, 0.28), transparent 42%),
+    #050b0a;
+}
+
+.telaAlunoPublica.negado {
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 71, 112, 0.24), transparent 42%),
+    #0c0609;
+}
+
+.telaAlunoMarca {
+  position: absolute;
+  top: 28px;
+  left: 34px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.telaAlunoMarca > div {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: #00e676;
+  overflow: hidden;
+  background: rgba(0, 230, 118, 0.1);
+  border: 1px solid rgba(0, 230, 118, 0.22);
+}
+
+.telaAlunoMarca img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.telaAlunoEspera,
+.telaAlunoResultado {
+  z-index: 1;
+  width: min(860px, 94vw);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.telaAlunoDigital {
+  width: 270px;
+  height: 270px;
+  border-radius: 50%;
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: #00e676;
+  border: 1px solid rgba(0, 230, 118, 0.35);
+  background: rgba(0, 230, 118, 0.06);
+  box-shadow: 0 0 80px rgba(0, 230, 118, 0.14);
+}
+
+.telaAlunoDigital::before,
+.telaAlunoDigital::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 230, 118, 0.18);
+}
+
+.telaAlunoDigital::before {
+  inset: -24px;
+}
+
+.telaAlunoDigital::after {
+  inset: -50px;
+}
+
+.telaAlunoDigital span {
+  position: absolute;
+  width: 72%;
+  height: 3px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, transparent, #00e676, transparent);
+  box-shadow: 0 0 20px #00e676;
+  animation: telaAlunoScan 2.2s infinite ease-in-out;
+}
+
+@keyframes telaAlunoScan {
+  0%, 100% { transform: translateY(-80px); opacity: 0.35; }
+  50% { transform: translateY(80px); opacity: 1; }
+}
+
+.telaAlunoEspera h1,
+.telaAlunoResultado h1 {
+  font-size: clamp(38px, 6vw, 74px);
+  margin: 70px 0 12px;
+  line-height: 1;
+}
+
+.telaAlunoEspera p,
+.telaAlunoResultado p {
+  max-width: 760px;
+  color: #aab4c5;
+  font-size: clamp(18px, 2.2vw, 27px);
+  line-height: 1.45;
+}
+
+.telaAlunoFoto {
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: currentColor;
+  border: 7px solid rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 90px rgba(0, 0, 0, 0.35);
+}
+
+.telaAlunoFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.telaAlunoIcone {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  margin-top: -54px;
+  display: grid;
+  place-items: center;
+  color: #03100a;
+  background: #00e676;
+  border: 8px solid #07100d;
+}
+
+.telaAlunoPublica.negado .telaAlunoIcone {
+  color: #fff;
+  background: #ff4770;
+  border-color: #14070b;
+}
+
+.telaAlunoResultado > span {
+  margin-top: 30px;
+  font-size: 18px;
+  font-weight: 1000;
+  letter-spacing: 0.22em;
+  color: #00e676;
+}
+
+.telaAlunoPublica.negado .telaAlunoResultado > span {
+  color: #ff5c7a;
+}
+
+.telaAlunoResultado h1 {
+  margin-top: 20px;
+}
+
+.telaAlunoResultado small {
+  margin-top: 22px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: #c8d0dc;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+@media (max-width: 700px) {
+  .telaAlunoMarca {
+    top: 18px;
+    left: 18px;
+  }
+
+  .telaAlunoDigital,
+  .telaAlunoFoto {
+    width: 190px;
+    height: 190px;
+  }
+
+  .telaAlunoEspera h1 {
+    margin-top: 55px;
+  }
+}
+
+/* HISTÓRICO DE ACESSOS */
+.historicoAcessosLista {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.historicoAcessoItem {
+  display: grid;
+  grid-template-columns: 54px 1fr minmax(220px, auto);
+  align-items: center;
+  gap: 14px;
+  padding: 13px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.historicoAcessoItem.liberado {
+  border-left: 4px solid #00e676;
+}
+
+.historicoAcessoItem.negado {
+  border-left: 4px solid #ff5c7a;
+}
+
+.historicoAcessoFoto {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: var(--cor-principal, #00e676);
+  background: rgba(0, 230, 118, 0.08);
+}
+
+.historicoAcessoFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.historicoAcessoItem > div:nth-child(2) strong,
+.historicoAcessoMotivo strong {
+  display: block;
+  color: var(--cor-texto, #fff);
+  margin-bottom: 4px;
+}
+
+.historicoAcessoItem span {
+  color: var(--cor-texto-suave, #929bad);
+  font-size: 12px;
+}
+
+.historicoAcessoMotivo {
+  text-align: right;
+}
+
+.historicoAcessoItem.liberado .historicoAcessoMotivo strong {
+  color: #00e676;
+}
+
+.historicoAcessoItem.negado .historicoAcessoMotivo strong {
+  color: #ff5c7a;
+}
+
+@media (max-width: 760px) {
+  .historicoAcessoItem {
+    grid-template-columns: 50px 1fr;
+  }
+  .historicoAcessoMotivo {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+}
+
+@media print {
+  .sidebar,
+  .headerActions button,
+  .relatorioFiltrosCard {
+    display: none !important;
+  }
+  .app,
+  .main,
+  .relatoriosPage {
+    display: block !important;
+    width: 100% !important;
+    min-height: auto !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .relatoriosPage * {
+    color: #111 !important;
+    box-shadow: none !important;
+  }
+}
