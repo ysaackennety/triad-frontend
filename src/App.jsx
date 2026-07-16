@@ -706,18 +706,18 @@ export default function App() {
         setStatusBackend("online");
       } catch (erro) {
         setStatusBackend("offline");
-        console.error("Erro ao salvar aluno no backend:", erro);
 
-        if (configuracoes.modoLeitorBiometrico === "real") {
-          alert(
-            `Não foi possível salvar o aluno no backend: ${erro.message}. O cadastro não foi concluído.`
-          );
-          return;
-        }
+        console.error("Erro ao salvar aluno no backend:", erro);
+        console.error("Dados do erro:", erro?.data);
 
         alert(
-          "Backend desconectado. Como o sistema está no modo misto, o aluno foi salvo localmente para demonstração."
+          `Não foi possível salvar o aluno no servidor.\n\n` +
+            `Erro: ${erro?.message || "Erro desconhecido"}\n` +
+            `Status: ${erro?.status || "sem resposta"}\n\n` +
+            `O cadastro NÃO foi salvo.`
         );
+
+        return;
       }
     }
 

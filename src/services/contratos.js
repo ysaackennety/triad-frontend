@@ -1,50 +1,37 @@
-import { formatarValorParaCampo } from "../utils/helpers";
+export function montarPayloadAluno({ formulario }) {
+  const digital = formulario.digital;
 
-export function montarPayloadAluno({ formulario, pagamentoInicial }) {
+  const biometriaHash =
+    typeof digital === "string"
+      ? digital
+      : digital?.biometriaHash ||
+        digital?.hash ||
+        digital?.templateId ||
+        digital?.id ||
+        "";
+
   return {
-    nome: formulario.nome.trim(),
-    cpf: formulario.cpf.trim(),
-    nascimento: formulario.nascimento,
-    email: formulario.email.trim() || null,
-    telefone: formulario.telefone.trim() || null,
-    emergencia: formulario.emergencia.trim() || null,
-    endereco: {
-      cidade: formulario.cidade.trim() || null,
-      bairro: formulario.bairro.trim() || null,
-      rua: formulario.rua.trim() || null,
-      numero: formulario.numero.trim() || null,
-    },
-    foto: formulario.foto,
-    biometria: {
-      templateId:
-        typeof formulario.digital === "string"
-          ? formulario.digital
-          : formulario.digital?.templateId || formulario.digital?.id,
-      leitor: formulario.digital?.leitor || "Futronic FS88",
-      qualidade: formulario.digital?.qualidade || null,
-    },
-    plano: {
-      valor: formulario.valorPlano,
-      vencimento: formulario.vencimento,
-      ativo: true,
-    },
-    pagamentoInicial: pagamentoInicial
-      ? {
-          valor: formatarValorParaCampo(pagamentoInicial.valorNumerico),
-          valorRecebido: formatarValorParaCampo(
-            pagamentoInicial.valorRecebidoNumerico
-          ),
-          troco: formatarValorParaCampo(pagamentoInicial.trocoNumerico),
-          forma: pagamentoInicial.forma,
-          data: pagamentoInicial.data,
-          horario: pagamentoInicial.horario,
-        }
-      : null,
+    nome: String(formulario.nome || "").trim(),
+    cpf: String(formulario.cpf || "").replace(/\D/g, ""),
+    biometriaHash: String(biometriaHash),
+    email: String(formulario.email || "").trim(),
+    telefone: String(formulario.telefone || "").replace(/\D/g, ""),
+    tipo: "ALUNO",
   };
 }
 
 export function normalizarAlunoBackend(resposta, fallback = {}) {
-  const aluno = resposta?.aluno || resposta?.data || resposta || {};
+  const aluno =
+    resposta?.usuario ||
+    resposta?.aluno ||
+    resposta?.cliente ||
+    resposta?.membro ||
+    resposta?.data?.usuario ||
+    resposta?.data?.aluno ||
+    resposta?.data ||
+    resposta ||
+    {};
+
   const endereco = aluno.endereco || {};
   const plano = aluno.plano || {};
   const biometria = aluno.biometria || {};
@@ -66,6 +53,7 @@ export function normalizarAlunoBackend(resposta, fallback = {}) {
     foto: aluno.foto ?? fallback.foto ?? "",
     digital:
       aluno.digital ??
+      aluno.biometriaHash ??
       biometria.templateId ??
       biometria.id ??
       fallback.digital ??
@@ -74,8 +62,14 @@ export function normalizarAlunoBackend(resposta, fallback = {}) {
       aluno.valorPlano ?? plano.valor ?? fallback.valorPlano ?? "0,00",
     vencimento:
       aluno.vencimento ?? plano.vencimento ?? fallback.vencimento ?? "",
-    ativo: aluno.ativo ?? plano.ativo ?? fallback.ativo,
+    ativo:
+      aluno.ativo ??
+      (aluno.status ? aluno.status === "ATIVO" : undefined) ??
+      plano.ativo ??
+      fallback.ativo,
     pagamentos: aluno.pagamentos ?? fallback.pagamentos ?? [],
+    tipo: aluno.tipo ?? fallback.tipo ?? "ALUNO",
+    status: aluno.status ?? fallback.status ?? "ATIVO",
   };
 }
 
@@ -98,8 +92,7 @@ export function montarPayloadAcesso({
       eventoBiometria?.templateId ||
       aluno?.digital ||
       null,
-    qualidade:
-      eventoBiometria?.qualidade || eventoBiometria?.score || null,
+    qualidade: eventoBiometria?.qualidade || eventoBiometria?.score || null,
     liberado,
     motivo,
     dataHora: new Date().toISOString(),
